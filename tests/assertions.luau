@@ -143,7 +143,14 @@ eq(rows[1].latency, 29.4, "rows[1].latency")
 eq(rows[1].level, "ok", "rows[1].level（1% 丢包不降级）")
 eq(rows[2].level, "warn", "rows[2].level（中继）")
 eq(rows[2].latency, nil, "rows[2].latency（无样本）")
-
+-- 7b. 分段：普通节点与中继节点分开（面板据此把中继单独成段并默认折叠）
+local normal, relay = e.splitRows(rows)
+eq(#normal, 1, "splitRows 普通组 1 个")
+eq(normal[1].hostname, "ylxc-r9000p", "普通组是 p2p 节点")
+eq(#relay, 1, "splitRows 中继组 1 个")
+eq(relay[1].hostname, "ylxc-phone", "中继组是 relay 节点")
+eq(#e.splitRows({}), 0, "splitRows 空表不报错")
+eq(#e.splitRows(nil), 0, "splitRows nil 不报错")
 -- 8. 本机信息
 local info = e.nodeInfo(snap)
 eq(info.hostname, "ylxc-t480s", "info.hostname")

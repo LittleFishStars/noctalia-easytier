@@ -23,6 +23,7 @@ local inflight = false
 local lastFetchAt = 0
 local open = false
 local expanded = false
+local relayOpen = false -- 中继节点默认折叠
 
 local draw, request -- 前向声明（draw 供卡片回调，request 供 offlineCard 引用）
 
@@ -281,6 +282,30 @@ local function peerSection(cfg, rows)
     return ui.column({ gap = 6 }, lines)
 end
 
+--- 中继节点分区的标题行：整行可点，默认折叠（relayOpen = false）。
+--- 不用 ui.button 是故意的：按钮必须待在容器末尾，而这里后面还要接卡片。
+local function relayHead(count)
+    return ui.row({
+        gap = 8,
+        align = "center",
+        onClick = function()
+            relayOpen = not relayOpen
+            draw()
+        end,
+        tooltip = tr("panel_relay_toggle", "点击展开或收起中继节点"),
+    }, {
+        ui.glyph({ name = "route", size = 14, color = "on_surface_variant" }),
+        ui.label({ text = tr("panel_relay", "中继"), fontWeight = "semibold" }),
+        ui.label({ text = tostring(count), color = "on_surface_variant", fontSize = 11 }),
+        ui.spacer({ flexGrow = 1 }),
+        ui.label({
+            text = relayOpen and tr("panel_collapse", "收起") or tr("panel_show", "展开"),
+            color = "on_surface_variant",
+            fontSize = 10,
+        }),
+    })
+end
+
 -- ── 路由 / 连接器 / 代理 / 转发 ────────────────────────────────────────────
 
 local function routeSection(cfg, routes)
@@ -461,8 +486,18 @@ local function body(cfg)
     table.insert(nodes, overview(cfg, d))
 
     table.insert(nodes, ui.spacer({ height = 4 }))
-    table.insert(nodes, sectionHead("server", tr("panel_peers", "节点"), d.total))
-    table.insert(nodes, peerSection(cfg, e.rows(snap, cfg)))
+    -- 普通节点与中继节点分两段：中继单独成段且默认折叠（面板矮一些才看得完）
+    local normalRows, relayRows = e.splitRows(e.rows(snap, cfg))
+
+    table.insert(nodes, sectionHead("server", tr("panel_peers", "节点"), #normalRows))
+    table.insert(nodes, peerSection(cfg, normalRows))
+
+    if #relayRows > 0 then
+        table.insert(nodes, relayHead(#relayRows))
+        if relayOpen then
+            table.insert(nodes, peerSection(cfg, relayRows))
+        end
+    end
 
     if snap.routes ~= nil and #snap.routes > 0 then
         table.insert(nodes, ui.spacer({ height = 4 }))

@@ -647,6 +647,21 @@ function M.rows(snap, cfg)
     return out
 end
 
+--- 把节点行按 cost 分成两组：普通（Local / p2p / 其他）与中继（relay）。
+--- 面板据此把中继单独成段并默认折叠。
+--- @return table 普通节点行, table 中继节点行
+function M.splitRows(rows)
+    local normal, relay = {}, {}
+    for _, row in ipairs(rows or {}) do
+        if row.cost == "relay" then
+            table.insert(relay, row)
+        else
+            table.insert(normal, row)
+        end
+    end
+    return normal, relay
+end
+
 --- 本机信息（面板顶部卡片）
 function M.nodeInfo(snap)
     local node = snap and snap.node
