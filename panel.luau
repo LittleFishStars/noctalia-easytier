@@ -24,6 +24,8 @@ local lastFetchAt = 0
 local open = false
 local expanded = false
 local serversOpen = false -- 服务器节点（公共共享节点）默认折叠
+local routesOpen = false -- 路由表默认折叠
+local connectorsOpen = false -- 连接器列表默认折叠
 
 local draw, request -- 前向声明（draw 供卡片回调，request 供 offlineCard 引用）
 
@@ -92,6 +94,28 @@ local function sectionHead(glyph, text, count, extra)
         table.insert(head, extra)
     end
     return ui.row({ gap = 8, align = "center" }, head)
+end
+
+-- ── 可折叠分区的标题行 ──────────────────────────────────────────────────────
+
+--- 可折叠分区的标题行：整行可点，右侧给「展开／收起」。
+--- 不用 ui.button 是故意的：按钮必须待在容器末尾，而这里后面还要接卡片。
+local function toggleHead(glyph, text, count, isOpen, toggle, tooltipText, extra)
+    local head = {
+        ui.glyph({ name = glyph, size = 14, color = "on_surface_variant" }),
+        ui.label({ text = text, fontWeight = "semibold" }),
+        ui.label({ text = tostring(count), color = "on_surface_variant", fontSize = 11 }),
+        ui.spacer({ flexGrow = 1 }),
+    }
+    if extra ~= nil then
+        table.insert(head, extra)
+    end
+    table.insert(head, ui.label({
+        text = isOpen and tr("panel_collapse", "收起") or tr("panel_show", "展开"),
+        color = "on_surface_variant",
+        fontSize = 10,
+    }))
+    return ui.row({ gap = 8, align = "center", onClick = toggle, tooltip = tooltipText }, head)
 end
 
 -- ── 本机卡片 ───────────────────────────────────────────────────────────────
@@ -282,34 +306,17 @@ local function peerSection(cfg, rows)
     return ui.column({ gap = 6 }, lines)
 end
 
---- 服务器节点分区的标题行：整行可点，默认折叠（serversOpen = false）。
---- 不用 ui.button 是故意的：按钮必须待在容器末尾，而这里后面还要接卡片。
+--- 服务器节点分区的标题行：默认折叠（serversOpen = false），右侧附带可用性文案。
 local function serverHead(count, d)
-    return ui.row({
-        gap = 8,
-        align = "center",
-        onClick = function()
-            serversOpen = not serversOpen
-            draw()
-        end,
-        tooltip = tr("panel_servers_toggle", "点击展开或收起服务器节点"),
-    }, {
-        ui.glyph({ name = "cloud", size = 14, color = "on_surface_variant" }),
-        ui.label({ text = tr("panel_servers", "服务器"), fontWeight = "semibold" }),
-        ui.label({ text = tostring(count), color = "on_surface_variant", fontSize = 11 }),
-        ui.spacer({ flexGrow = 1 }),
+    return toggleHead("cloud", tr("panel_servers", "服务器"), count, serversOpen, function()
+        serversOpen = not serversOpen
+        draw()
+    end, tr("panel_servers_toggle", "点击展开或收起服务器节点"), ui.label({
         -- 服务器可用性：只要有一台不可用就用告警色标出（全挂时栏图标会变红）
-        ui.label({
-            text = e.serversText(d),
-            color = ((d and (d.serversDown or 0) > 0) and "error") or "on_surface_variant",
-            fontSize = 10,
-        }),
-        ui.label({
-            text = serversOpen and tr("panel_collapse", "收起") or tr("panel_show", "展开"),
-            color = "on_surface_variant",
-            fontSize = 10,
-        }),
-    })
+        text = e.serversText(d),
+        color = ((d and (d.serversDown or 0) > 0) and "error") or "on_surface_variant",
+        fontSize = 10,
+    }))
 end
 
 -- ── 路由 / 连接器 / 代理 / 转发 ────────────────────────────────────────────
@@ -507,14 +514,24 @@ local function body(cfg)
 
     if snap.routes ~= nil and #snap.routes > 0 then
         table.insert(nodes, ui.spacer({ height = 4 }))
-        table.insert(nodes, sectionHead("route", tr("panel_routes", "路由"), #snap.routes))
-        table.insert(nodes, routeSection(cfg, snap.routes))
+        table.insert(nodes, toggleHead("route", tr("panel_routes", "路由"), #snap.routes, routesOpen, function()
+            routesOpen = not routesOpen
+            draw()
+        end, tr("panel_routes_toggle", "点击展开或收起路由表")))
+        if routesOpen then
+            table.insert(nodes, routeSection(cfg, snap.routes))
+        end
     end
 
     if snap.connectors ~= nil and #snap.connectors > 0 then
         table.insert(nodes, ui.spacer({ height = 4 }))
-        table.insert(nodes, sectionHead("plug", tr("panel_connectors", "连接器"), #snap.connectors))
-        table.insert(nodes, connectorSection(e.connectorRows(snap)))
+        table.insert(nodes, toggleHead("plug", tr("panel_connectors", "连接器"), #snap.connectors, connectorsOpen, function()
+            connectorsOpen = not connectorsOpen
+            draw()
+        end, tr("panel_connectors_toggle", "点击展开或收起连接器列表")))
+        if connectorsOpen then
+            table.insert(nodes, connectorSection(e.connectorRows(snap)))
+        end
     end
 
     if snap.proxies ~= nil and #snap.proxies > 0 then

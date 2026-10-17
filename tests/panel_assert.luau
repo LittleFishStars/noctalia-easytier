@@ -43,8 +43,8 @@ local function collect()
     return result
 end
 
--- 找到「服务器」分区那行（整行可点，用来展开／折叠）
-local function findServerHead()
+-- 找到某个可折叠分区的标题行（整行可点，用来展开／折叠）
+local function findToggleHead(title)
     local found = nil
     walk(rendered, function(node)
         if node.kind ~= "row" or not (node.props and node.props.onClick) then
@@ -52,7 +52,7 @@ local function findServerHead()
         end
         for _, child in ipairs(node.children or {}) do
             local text = child.props and child.props.text
-            if text == "服务器" then
+            if text == title then
                 found = node
             end
         end
@@ -100,7 +100,7 @@ eq(first.has("ylxc-r9000p"), true, "普通（p2p）节点已渲染")
 eq(first.has("183.219.160.42"), true, "公网地址已渲染")
 eq(first.has("Symmetric"), true, "NAT 类型已渲染")
 eq(first.has("29.4ms"), true, "延迟已格式化渲染")
-eq(first.has("tcp://public.easytier.cn:11010"), true, "连接器地址已渲染")
+eq(first.has("tcp://public.easytier.cn:11010"), false, "连接器默认折叠（地址未渲染）")
 eq(first.has("ylxc"), true, "网络名已渲染")
 
 -- 4. 服务器节点与普通节点分段，且服务器默认折叠（relay 模式的节点不算服务器）
@@ -109,8 +109,8 @@ eq(first.has("ylxc-phone"), true, "relay 模式节点留在普通组里照常渲
 eq(hasServerCard(), false, "服务器节点卡片默认折叠（未渲染）")
 eq(first.has("展开"), true, "折叠时显示「展开」")
 
--- 5. 点一下服务器标题行 → 展开；再点一下 → 收回
-local serverRow = findServerHead()
+-- 5. 服务器节点：点标题行展开、再点收回（默认折叠）
+local serverRow = findToggleHead("服务器")
 eq(serverRow ~= nil, true, "服务器分区标题行可点")
 
 serverRow.props.onClick()
@@ -118,19 +118,46 @@ local opened = collect()
 eq(hasServerCard(), true, "点击后服务器节点卡片渲染出来")
 eq(opened.has("收起"), true, "展开后显示「收起」")
 
-serverRow = findServerHead()
+serverRow = findToggleHead("服务器")
 eq(serverRow ~= nil, true, "展开后服务器标题行仍在")
 serverRow.props.onClick()
 local folded = collect()
 eq(hasServerCard(), false, "再点一次重新折叠")
 eq(folded.has("展开"), true, "收回去后又显示「展开」")
 
--- 6. 渲染树规模合理（防止「只剩本机卡片」这种半截渲染再次发生）
-eq(first.total > 60, true, string.format("渲染树节点数 %d 应大于 60", first.total))
+-- 6. 路由表与连接器同样可折叠，且默认都是收起状态
+local foldedAll = collect()
+eq(foldedAll.has("经 ylxc-r9000p"), false, "路由表默认折叠（未渲染）")
+eq(foldedAll.has("tcp://public.easytier.cn:11010"), false, "连接器默认折叠（未渲染）")
+
+local routeRow = findToggleHead("路由")
+eq(routeRow ~= nil, true, "路由分区标题行可点")
+routeRow.props.onClick()
+local routesShown = collect()
+eq(routesShown.has("经 ylxc-r9000p"), true, "点击后路由表渲染出来")
+eq(routesShown.has("tcp://public.easytier.cn:11010"), false, "展开路由不影响连接器")
+
+routeRow = findToggleHead("路由")
+routeRow.props.onClick()
+eq(collect().has("经 ylxc-r9000p"), false, "再点一次重新折叠路由")
+
+local connRow = findToggleHead("连接器")
+eq(connRow ~= nil, true, "连接器分区标题行可点")
+connRow.props.onClick()
+local connShown = collect()
+eq(connShown.has("tcp://public.easytier.cn:11010"), true, "点击后连接器列表渲染出来")
+eq(connShown.has("已连接"), true, "连接器状态已渲染")
+
+connRow = findToggleHead("连接器")
+connRow.props.onClick()
+eq(collect().has("tcp://public.easytier.cn:11010"), false, "再点一次重新折叠连接器")
+
+-- 7. 渲染树规模合理（防止「只剩本机卡片」这种半截渲染再次发生）
+eq(first.total > 45, true, string.format("渲染树节点数 %d 应大于 45", first.total))
 eq((first.kinds.scroll or 0), 1, "只有一个滚动区")
 eq((first.kinds.button or 0) >= 1, true, "至少有刷新按钮")
 
--- 7. 按钮必须位于其容器的末尾（宿主已知渲染陷阱）
+-- 8. 按钮必须位于其容器的末尾（宿主已知渲染陷阱）
 local violations = {}
 walk(rendered, function(node)
     local children = node.children or {}
@@ -142,7 +169,7 @@ walk(rendered, function(node)
 end)
 eq(#violations, 0, "按钮都在容器末尾" .. (#violations > 0 and ("（" .. table.concat(violations, "；") .. "）") or ""))
 
--- 8. 没有加载中的占位文案残留（说明数据链路跑通了）
+-- 9. 没有加载中的占位文案残留（说明数据链路跑通了）
 eq(first.has("正在读取"), false, "不应停留在「正在读取」状态")
 
 print(string.format("面板渲染通过：%d 个节点（%s），文本 %d 条", first.total, "button=" .. tostring(first.kinds.button or 0), #first.texts))
