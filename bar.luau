@@ -83,7 +83,7 @@ local function buildTooltip(cfg, w, snap_, level)
         return rows
     end
 
-    local d = derived or e.derive(snap_)
+    local d = derived or e.derive(snap_, cfg)
 
     if info ~= nil then
         local where = info.hostname
@@ -103,6 +103,13 @@ local function buildTooltip(cfg, w, snap_, level)
         key = e.tr("tt_peers", "节点"),
         value = string.format(e.tr("tt_peers_value", "%d 个（直连 %d · 中继 %d）"), d.total, d.direct, d.relay),
     })
+
+    if (d.servers or 0) > 0 then
+        table.insert(rows, {
+            key = e.tr("tt_servers", "服务器"),
+            value = e.serversText(d),
+        })
+    end
 
     if d.counted > 0 then
         table.insert(rows, {
@@ -158,7 +165,7 @@ local function render()
     lastLevel = level
 
     local info = e.nodeInfo(snap)
-    local d = derived or e.derive(snap)
+    local d = derived or e.derive(snap, cfg)
     local role = e.roleOf(level)
 
     if w.showGlyph then
@@ -191,7 +198,7 @@ local function request()
         inflight = false
         lastFetchAt = os.time()
         snap = result
-        derived = e.derive(result)
+        derived = e.derive(result, cfg)
         render()
     end)
 end

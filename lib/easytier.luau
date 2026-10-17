@@ -473,12 +473,18 @@ function M.costOf(peer)
 end
 
 --- 汇总一份快照：节点计数、延迟分布、丢包面、收发流量
-function M.derive(snap)
+function M.derive(snap, cfg)
+    local prefixes = M.prefixes(cfg)
+    local critLatency = (cfg and cfg.critLatency) or math.huge
+    local lossCrit = (cfg and cfg.lossCrit) or math.huge
     local d = {
         total = 0,
         direct = 0,
         relay = 0,
         other = 0,
+        servers = 0,
+        serversUp = 0,
+        serversDown = 0,
         best = nil,
         worst = nil,
         sum = 0,
@@ -525,6 +531,18 @@ function M.derive(snap)
                     d.lossMax = loss
                 end
             end
+
+            -- 服务器节点（公共共享节点）单独记账：它们全挂了才算组网失效
+            if M.isServer(peer.hostname, prefixes) then
+                d.servers += 1
+                local down = (latency ~= nil and latency >= critLatency)
+                    or (loss ~= nil and loss >= lossCrit)
+                if down then
+                    d.serversDown += 1
+                else
+                    d.serversUp += 1
+                end
+            end
         end
         d.rx += M.parseBytes(peer.rx_bytes) or 0
         d.tx += M.parseBytes(peer.tx_bytes) or 0
@@ -538,7 +556,9 @@ function M.derive(snap)
 end
 
 --- 状态分级：off（core 没跑）/ ok / warn / crit
----   延迟按「最优延迟」判，最差值只用于展示——远端节点天然慢，不该让整栏变红
+---   红色只留给「所有服务器节点都不可用」：公共服务器是跨网可达的兜底路径，
+---   只要还有一台可用就说明组网没断，延迟/丢包再差也最多降为「偏高」（用户要求）。
+---   单个服务器是否可用按严重阈值判：延迟 ≥ crit_latency_ms 或丢包 ≥ loss_crit_percent。
 function M.level(cfg, snap, derived)
     if snap == nil then
         return "loading"
@@ -546,12 +566,13 @@ function M.level(cfg, snap, derived)
     if snap.node == nil then
         return "off"
     end
-    local d = derived or M.derive(snap)
-    if d.best ~= nil and d.best >= cfg.critLatency then
+    local d = derived or M.derive(snap, cfg)
+    if d.servers > 0 and d.serversDown >= d.servers then
         return "crit"
     end
-    if d.lossMax >= cfg.lossCrit then
-        return "crit"
+    -- 有服务器不可用但还没全挂 → 黄色提醒，别到红
+    if d.servers > 0 and d.serversDown > 0 then
+        return "warn"
     end
     if d.best ~= nil and d.best >= cfg.warnLatency then
         return "warn"
@@ -568,6 +589,21 @@ function M.level(cfg, snap, derived)
         return "warn"
     end
     return "ok"
+end
+
+--- 服务器节点（公共共享节点）的可用概况：栏提示与面板共用一份文案
+function M.serversText(d)
+    if d == nil or (d.servers or 0) == 0 then
+        return M.tr("tt_servers_none", "无")
+    end
+    local down = d.serversDown or 0
+    if down >= d.servers then
+        return string.format(M.tr("tt_servers_down", "%d 个全部不可用"), d.servers)
+    end
+    if down > 0 then
+        return string.format(M.tr("tt_servers_partial", "%d/%d 可用（%d 个不可用）"), d.serversUp or (d.servers - down), d.servers, down)
+    end
+    return string.format(M.tr("tt_servers_ok", "%d 个均可用"), d.servers)
 end
 
 -- 主题只有 primary / secondary / tertiary / error 四个可用角色

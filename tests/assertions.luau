@@ -118,7 +118,7 @@ eq(e.level(cfg, { failed = {} }, nil), "off", "level core 未运行")
 eq(e.level(cfg, snap, d), "warn", "level 出现中继 → warn")
 
 local function fake(overrides)
-    local base = { total = 1, direct = 1, relay = 0, other = 0, best = 29.4, worst = 29.4, avg = 29.4, counted = 1, lossy = 0, lossMax = 0, ready = true }
+    local base = { total = 1, direct = 1, relay = 0, other = 0, servers = 0, serversUp = 0, serversDown = 0, best = 29.4, worst = 29.4, avg = 29.4, counted = 1, lossy = 0, lossMax = 0, ready = true }
     for key, value in pairs(overrides or {}) do
         base[key] = value
     end
@@ -127,11 +127,35 @@ end
 
 eq(e.level(cfg, snap, fake()), "ok", "level 全绿")
 eq(e.level(cfg, snap, fake({ best = 200, avg = 200, worst = 200 })), "warn", "level 延迟过告警线")
-eq(e.level(cfg, snap, fake({ best = 500, avg = 500, worst = 500 })), "crit", "level 延迟过严重线")
+eq(e.level(cfg, snap, fake({ best = 500, avg = 500, worst = 500 })), "warn", "level 延迟过严重线也只黄（服务器没全挂）")
 eq(e.level(cfg, snap, fake({ lossy = 1, lossMax = 1 })), "ok", "level 1% 丢包不降级（低于告警阈值）")
 eq(e.level(cfg, snap, fake({ lossy = 1, lossMax = 5 })), "warn", "level 5% 丢包 → warn")
-eq(e.level(cfg, snap, fake({ lossy = 1, lossMax = 12 })), "crit", "level 12% 丢包 → crit")
+eq(e.level(cfg, snap, fake({ lossy = 1, lossMax = 12 })), "warn", "level 12% 丢包也只黄（服务器没全挂）")
 eq(e.level(cfg, snap, fake({ relay = 1, direct = 0, avg = 200 })), "warn", "level 平均延迟过线")
+-- 红色只留给「所有服务器节点都不可用」
+eq(e.level(cfg, snap, fake({ servers = 3, serversUp = 0, serversDown = 3 })), "crit", "level 服务器全挂 → crit")
+eq(e.level(cfg, snap, fake({ servers = 3, serversUp = 1, serversDown = 2 })), "warn", "level 部分服务器不可用 → 仍只是 warn")
+eq(e.level(cfg, snap, fake({ servers = 3, serversUp = 3, serversDown = 0 })), "ok", "level 服务器全好 → ok")
+
+-- 7b-2. 服务器可用性统计（红色判定的依据）
+local peerMix = { peers = {
+    { hostname = "YlxcComputer", cost = "Local", lat_ms = "0.00", loss_rate = "0.0%" },
+    { hostname = "YlxcServer", cost = "p2p", lat_ms = "12.00", loss_rate = "0.0%" },
+    { hostname = "PublicServer_debian", cost = "p2p", lat_ms = "30.60", loss_rate = "0.0%" },
+    { hostname = "PublicServer_slow", cost = "p2p", lat_ms = "620.00", loss_rate = "0.0%" },
+    { hostname = "PublicServer_lossy", cost = "p2p", lat_ms = "40.00", loss_rate = "15.0%" },
+} }
+local snapMix = { node = snap.node, peers = peerMix.peers }
+local dm = e.derive(snapMix, cfg)
+eq(dm.servers, 3, "derive.servers 只数公共服务器（本机与自建服务器不算）")
+eq(dm.serversDown, 2, "derive.serversDown（620ms 过严重延迟线 + 15% 过严重丢包线）")
+eq(dm.serversUp, 1, "derive.serversUp")
+eq(e.level(cfg, snapMix, dm) ~= "crit", true, "还有一台服务器可用 → 不判红")
+eq(e.level(cfg, snapMix, { servers = 3, serversUp = 0, serversDown = 3 }), "crit", "三台服务器全挂 → 红")
+eq(e.serversText(dm), "1/3 可用（2 个不可用）", "serversText 部分可用")
+eq(e.serversText({ servers = 3, serversUp = 0, serversDown = 3 }), "3 个全部不可用", "serversText 全挂")
+eq(e.serversText({ servers = 0 }), "无", "serversText 无服务器")
+eq(e.serversText(nil), "无", "serversText nil 不报错")
 
 -- 7. 排序与行数据（直连在前、中继在后）
 local rows = e.rows(snap, cfg)

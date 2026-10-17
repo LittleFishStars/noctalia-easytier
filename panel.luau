@@ -284,7 +284,7 @@ end
 
 --- 服务器节点分区的标题行：整行可点，默认折叠（serversOpen = false）。
 --- 不用 ui.button 是故意的：按钮必须待在容器末尾，而这里后面还要接卡片。
-local function serverHead(count)
+local function serverHead(count, d)
     return ui.row({
         gap = 8,
         align = "center",
@@ -298,6 +298,12 @@ local function serverHead(count)
         ui.label({ text = tr("panel_servers", "服务器"), fontWeight = "semibold" }),
         ui.label({ text = tostring(count), color = "on_surface_variant", fontSize = 11 }),
         ui.spacer({ flexGrow = 1 }),
+        -- 服务器可用性：只要有一台不可用就用告警色标出（全挂时栏图标会变红）
+        ui.label({
+            text = e.serversText(d),
+            color = ((d and (d.serversDown or 0) > 0) and "error") or "on_surface_variant",
+            fontSize = 10,
+        }),
         ui.label({
             text = serversOpen and tr("panel_collapse", "收起") or tr("panel_show", "展开"),
             color = "on_surface_variant",
@@ -478,7 +484,7 @@ local function body(cfg)
     end
 
     local info = e.nodeInfo(snap)
-    local d = derived or e.derive(snap)
+    local d = derived or e.derive(snap, cfg)
 
     if info ~= nil then
         table.insert(nodes, selfCard(cfg, info))
@@ -493,7 +499,7 @@ local function body(cfg)
     table.insert(nodes, peerSection(cfg, normalRows))
 
     if #serverRows > 0 then
-        table.insert(nodes, serverHead(#serverRows))
+        table.insert(nodes, serverHead(#serverRows, d))
         if serversOpen then
             table.insert(nodes, peerSection(cfg, serverRows))
         end
@@ -553,7 +559,7 @@ request = function()
         inflight = false
         lastFetchAt = os.time()
         snap = result
-        derived = e.derive(result)
+        derived = e.derive(result, cfg)
         draw()
     end)
 end
