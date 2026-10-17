@@ -1,0 +1,162 @@
+{
+  "bar_off": "未运行",
+  "level_crit": "严重",
+  "level_loading": "读取中",
+  "level_off": "未运行",
+  "level_ok": "正常",
+  "level_warn": "偏高",
+  "notify_down_body": "easytier-cli 连不上 core，组网可能已中断",
+  "notify_down_title": "EasyTier 已断开",
+  "notify_up_body": "core 重新可管理",
+  "notify_up_title": "EasyTier 已恢复",
+  "opt_direct": "直连 / 总数",
+  "opt_error": "告警色",
+  "opt_ip": "虚拟 IPv4",
+  "opt_latency": "最优延迟",
+  "opt_level": "按状态",
+  "opt_peers": "节点数",
+  "opt_primary": "主题主色",
+  "opt_secondary": "主题次色",
+  "opt_status": "节点状态",
+  "opt_tertiary": "主题第三色",
+  "opt_theme": "跟随组件配色",
+  "opt_traffic": "累计流量",
+  "panel_avg": "平均延迟",
+  "panel_best": "最优延迟",
+  "panel_cli_line": "easytier-cli：%s",
+  "panel_cli_missing": "未找到（请在插件设置里指定绝对路径）",
+  "panel_collapse": "收起",
+  "panel_connected": "已连接",
+  "panel_connectors": "连接器",
+  "panel_cost": "cost",
+  "panel_direct": "直连",
+  "panel_expand": "展开其余 %d 个",
+  "panel_fail_reason": "上次失败原因：%s",
+  "panel_forward": "端口转发",
+  "panel_hop": "经 %s",
+  "panel_hops": "%d 跳",
+  "panel_inst": "实例",
+  "panel_listen": "监听",
+  "panel_loading": "正在读取 easytier-cli…",
+  "panel_loss": "丢包节点",
+  "panel_loss_rate": "丢包",
+  "panel_more": "还有 %d 条…",
+  "panel_nat": "NAT",
+  "panel_no_peer": "当前没有其他节点。",
+  "panel_offline": "EasyTier core 未运行或 RPC 连不上",
+  "panel_offline_hint": "确认 easytier-core 正在运行，且它的 --rpc-portal 与本插件设置一致。",
+  "panel_peer_id": "Peer ID",
+  "panel_peers": "节点",
+  "panel_port_range": "公网端口",
+  "panel_proxy": "子网代理",
+  "panel_proxy_title": "子网代理",
+  "panel_public": "公网",
+  "panel_refresh": "重新读取",
+  "panel_relay": "中继",
+  "panel_retry": "重试",
+  "panel_route_failed": "路由表读取失败：%s",
+  "panel_routes": "路由",
+  "panel_rpc_line": "RPC 地址：%s",
+  "panel_source": "数据源：%s（只读，不修改 EasyTier 配置）",
+  "panel_status_code": "状态 %d",
+  "panel_traffic": "累计流量",
+  "panel_updated": "更新于 %s",
+  "panel_version": "版本",
+  "panel_worst": "最差延迟",
+  "settings": {
+    "cli_path": {
+      "description": "留空则使用 PATH 里的 easytier-cli；填绝对路径可指定其他版本。",
+      "label": "easytier-cli 路径"
+    },
+    "crit_latency_ms": {
+      "description": "最优延迟达到该值即判为「严重」（优先级高于告警阈值）。",
+      "label": "严重延迟阈值（毫秒）"
+    },
+    "display": {
+      "description": "图标旁边显示什么内容。",
+      "label": "栏上文字"
+    },
+    "fetch_extras": {
+      "description": "打开面板时额外读取路由表、连接器、代理与端口转发（多几条子进程调用）；关掉只读本机与节点列表。",
+      "label": "面板读取额外信息"
+    },
+    "glyph": {
+      "description": "栏上显示的 Tabler 图标。",
+      "label": "图标"
+    },
+    "glyph_color": {
+      "description": "「按状态」会随组网健康度变色；其余选项固定使用某个主题角色。",
+      "label": "图标颜色"
+    },
+    "hide_when_stopped": {
+      "description": "core 没在运行时把整个组件从栏上收起来。",
+      "label": "未运行时隐藏组件"
+    },
+    "instance_id": {
+      "description": "对应 easytier-cli -i/--instance-id；已知实例 ID 时优先填这一项。",
+      "label": "实例 ID"
+    },
+    "instance_name": {
+      "description": "对应 easytier-cli -n/--instance-name；同一台机器跑多个实例时才需要。",
+      "label": "实例名"
+    },
+    "loss_crit_percent": {
+      "description": "任一节点丢包率达到该值即判为「严重」。",
+      "label": "严重丢包阈值（%）"
+    },
+    "loss_warn_percent": {
+      "description": "任一节点丢包率达到该值即降级为「偏高」；调高可避免偶尔 1% 的抖动把状态栏长期染黄。",
+      "label": "告警丢包阈值（%）"
+    },
+    "max_peers": {
+      "description": "面板里最多直接列出多少个节点，多余的收进「展开」。",
+      "label": "面板节点上限"
+    },
+    "notify_state_change": {
+      "description": "组网从可用变成连不上（或恢复）时弹一条通知。",
+      "label": "状态变化时通知"
+    },
+    "refresh_seconds": {
+      "description": "多久重新调用一次 easytier-cli（2-600 秒）。",
+      "label": "刷新间隔（秒）"
+    },
+    "relay_warn": {
+      "description": "出现中继节点时把状态降级为「偏高」（中继会额外增加延迟）。",
+      "label": "出现中继就告警"
+    },
+    "rpc_portal": {
+      "description": "easytier-core 的 RPC 地址，默认 127.0.0.1:15888；留空按默认值。",
+      "label": "RPC 地址"
+    },
+    "show_glyph": {
+      "description": "关掉后只保留文字。",
+      "label": "显示图标"
+    },
+    "warn_latency_ms": {
+      "description": "最优延迟达到该值即降级为「偏高」。",
+      "label": "告警延迟阈值（毫秒）"
+    }
+  },
+  "status_loading": "读取中…",
+  "status_no_cli": "找不到 easytier-cli",
+  "status_nofork": "无法启动 easytier-cli",
+  "status_running": "运行中",
+  "status_stopped": "未运行",
+  "status_timeout": "RPC 超时",
+  "tt_hint": "左键：详情 · 右键：立刻刷新",
+  "tt_hint_key": "提示",
+  "tt_hint_off": "确认 easytier-core 正在运行；左键打开面板",
+  "tt_latency": "延迟",
+  "tt_latency_value": "最优 %s · 平均 %s · 最差 %s",
+  "tt_loss": "丢包",
+  "tt_loss_value": "%d 个节点丢包，最大 %s",
+  "tt_nat": "NAT 类型",
+  "tt_network": "网络",
+  "tt_peers": "节点",
+  "tt_peers_value": "%d 个（直连 %d · 中继 %d）",
+  "tt_portal": "RPC 地址",
+  "tt_public_ip": "公网地址",
+  "tt_status": "状态",
+  "tt_traffic": "流量",
+  "tt_version": "版本"
+}

@@ -1,0 +1,6 @@
+# 调试与验证的临时产物（保留源码）
+*.log
+tmp/
+screenshots/
+*.tmp
+*.bak
