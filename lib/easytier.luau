@@ -132,6 +132,7 @@ function M.cfg()
         lossWarn = M.clamp(M.number("loss_warn_percent", 2), 1, 100),
         extras = M.flag("fetch_extras", true),
         maxPeers = M.clamp(M.number("max_peers", 64), 4, 512),
+        serverPrefix = M.text("server_prefix", "PublicServer"),
         notify = M.flag("notify_state_change", false),
     }
 end
@@ -647,19 +648,47 @@ function M.rows(snap, cfg)
     return out
 end
 
---- 把节点行按 cost 分成两组：普通（Local / p2p / 其他）与中继（relay）。
---- 面板据此把中继单独成段并默认折叠。
---- @return table 普通节点行, table 中继节点行
-function M.splitRows(rows)
-    local normal, relay = {}, {}
+--- 主机名前缀列表（plugin.toml 的 server_prefix，逗号分隔，中英文逗号都认）
+function M.prefixes(cfg)
+    local out = {}
+    for piece in tostring((cfg and cfg.serverPrefix) or ""):gmatch("[^,，]+") do
+        local trimmed = piece:match("^%s*(.-)%s*$")
+        if trimmed ~= "" then
+            table.insert(out, trimmed:lower())
+        end
+    end
+    return out
+end
+
+--- 是否算「服务器节点」：公共共享节点（EasyTier 官方的 PublicServer_* 命名）
+--- 注意：不是 cost = relay 的那种中继模式节点，两者无关
+function M.isServer(hostname, prefixes)
+    local name = tostring(hostname or ""):lower()
+    if name == "" then
+        return false
+    end
+    for _, prefix in ipairs(prefixes or {}) do
+        if name:find(prefix, 1, true) ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
+--- 把节点行分成两组：普通设备与服务器节点（公共共享节点）。
+--- 面板据此把服务器单独成段并默认折叠。
+--- @return table 普通节点行, table 服务器节点行
+function M.splitRows(rows, cfg)
+    local prefixes = M.prefixes(cfg)
+    local normal, servers = {}, {}
     for _, row in ipairs(rows or {}) do
-        if row.cost == "relay" then
-            table.insert(relay, row)
+        if M.isServer(row.hostname, prefixes) then
+            table.insert(servers, row)
         else
             table.insert(normal, row)
         end
     end
-    return normal, relay
+    return normal, servers
 end
 
 --- 本机信息（面板顶部卡片）

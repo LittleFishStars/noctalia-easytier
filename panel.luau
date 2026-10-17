@@ -23,7 +23,7 @@ local inflight = false
 local lastFetchAt = 0
 local open = false
 local expanded = false
-local relayOpen = false -- 中继节点默认折叠
+local serversOpen = false -- 服务器节点（公共共享节点）默认折叠
 
 local draw, request -- 前向声明（draw 供卡片回调，request 供 offlineCard 引用）
 
@@ -282,24 +282,24 @@ local function peerSection(cfg, rows)
     return ui.column({ gap = 6 }, lines)
 end
 
---- 中继节点分区的标题行：整行可点，默认折叠（relayOpen = false）。
+--- 服务器节点分区的标题行：整行可点，默认折叠（serversOpen = false）。
 --- 不用 ui.button 是故意的：按钮必须待在容器末尾，而这里后面还要接卡片。
-local function relayHead(count)
+local function serverHead(count)
     return ui.row({
         gap = 8,
         align = "center",
         onClick = function()
-            relayOpen = not relayOpen
+            serversOpen = not serversOpen
             draw()
         end,
-        tooltip = tr("panel_relay_toggle", "点击展开或收起中继节点"),
+        tooltip = tr("panel_servers_toggle", "点击展开或收起服务器节点"),
     }, {
-        ui.glyph({ name = "route", size = 14, color = "on_surface_variant" }),
-        ui.label({ text = tr("panel_relay", "中继"), fontWeight = "semibold" }),
+        ui.glyph({ name = "cloud", size = 14, color = "on_surface_variant" }),
+        ui.label({ text = tr("panel_servers", "服务器"), fontWeight = "semibold" }),
         ui.label({ text = tostring(count), color = "on_surface_variant", fontSize = 11 }),
         ui.spacer({ flexGrow = 1 }),
         ui.label({
-            text = relayOpen and tr("panel_collapse", "收起") or tr("panel_show", "展开"),
+            text = serversOpen and tr("panel_collapse", "收起") or tr("panel_show", "展开"),
             color = "on_surface_variant",
             fontSize = 10,
         }),
@@ -486,16 +486,16 @@ local function body(cfg)
     table.insert(nodes, overview(cfg, d))
 
     table.insert(nodes, ui.spacer({ height = 4 }))
-    -- 普通节点与中继节点分两段：中继单独成段且默认折叠（面板矮一些才看得完）
-    local normalRows, relayRows = e.splitRows(e.rows(snap, cfg))
+    -- 普通设备与服务器节点分两段：公共共享服务器单独成段且默认折叠
+    local normalRows, serverRows = e.splitRows(e.rows(snap, cfg), cfg)
 
     table.insert(nodes, sectionHead("server", tr("panel_peers", "节点"), #normalRows))
     table.insert(nodes, peerSection(cfg, normalRows))
 
-    if #relayRows > 0 then
-        table.insert(nodes, relayHead(#relayRows))
-        if relayOpen then
-            table.insert(nodes, peerSection(cfg, relayRows))
+    if #serverRows > 0 then
+        table.insert(nodes, serverHead(#serverRows))
+        if serversOpen then
+            table.insert(nodes, peerSection(cfg, serverRows))
         end
     end
 

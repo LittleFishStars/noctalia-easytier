@@ -53,7 +53,8 @@
   "panel_public": "Public",
   "panel_refresh": "Read again",
   "panel_relay": "Relay",
-  "panel_relay_toggle": "Click to show or hide relay nodes",
+  "panel_servers": "Servers",
+  "panel_servers_toggle": "Click to show or hide server nodes",
   "panel_retry": "Retry",
   "panel_route_failed": "Route table failed: %s",
   "panel_routes": "Routes",
@@ -113,6 +114,10 @@
     "max_peers": {
       "description": "How many peers the panel lists before collapsing the rest behind an expand button.",
       "label": "Peer list limit"
+    },
+    "server_prefix": {
+      "description": "Hostnames containing any of these prefixes are treated as shared server nodes: grouped separately and collapsed by default. Separate prefixes with commas.",
+      "label": "Server node prefixes"
     },
     "notify_state_change": {
       "description": "Send a notification when the mesh goes from working to unreachable (and back).",

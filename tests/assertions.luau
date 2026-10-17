@@ -23,6 +23,7 @@ eq(cfg.lossWarn, 2, "cfg.lossWarn")
 eq(cfg.lossCrit, 10, "cfg.lossCrit")
 eq(cfg.extras, true, "cfg.extras")
 eq(cfg.maxPeers, 64, "cfg.maxPeers")
+eq(cfg.serverPrefix, "PublicServer", "cfg.serverPrefix")
 eq(cfg.notify, false, "cfg.notify")
 
 -- 2. argv 组装（argv 形式不经过 shell）
@@ -143,12 +144,28 @@ eq(rows[1].latency, 29.4, "rows[1].latency")
 eq(rows[1].level, "ok", "rows[1].level（1% 丢包不降级）")
 eq(rows[2].level, "warn", "rows[2].level（中继）")
 eq(rows[2].latency, nil, "rows[2].latency（无样本）")
--- 7b. 分段：普通节点与中继节点分开（面板据此把中继单独成段并默认折叠）
-local normal, relay = e.splitRows(rows)
-eq(#normal, 1, "splitRows 普通组 1 个")
-eq(normal[1].hostname, "ylxc-r9000p", "普通组是 p2p 节点")
-eq(#relay, 1, "splitRows 中继组 1 个")
-eq(relay[1].hostname, "ylxc-phone", "中继组是 relay 节点")
+-- 7b. 分段：普通设备与服务器节点（公共共享节点）分开
+--     「服务器节点」指的是 PublicServer_* 这类公共共享节点，与 cost = relay 无关
+local normal, servers = e.splitRows(rows, cfg)
+eq(#normal, 2, "splitRows 普通组 2 个（relay 模式节点也算普通设备）")
+eq(normal[1].hostname, "ylxc-r9000p", "普通组含 p2p 节点")
+eq(normal[2].hostname, "ylxc-phone", "普通组含 relay 模式节点")
+eq(#servers, 0, "样本里没有公共服务器 → 服务器组为空")
+
+local mixed = e.rows({ peers = {
+    { hostname = "YlxcServer", ipv4 = "172.24.0.1", cost = "p2p", lat_ms = "12.00" },
+    { hostname = "PublicServer_debian", ipv4 = "", cost = "p2p", lat_ms = "30.60" },
+    { hostname = "PublicServer_Arisu", ipv4 = "", cost = "p2p", lat_ms = "29.00" },
+} }, cfg)
+local plain, shared = e.splitRows(mixed, cfg)
+eq(#plain, 1, "服务器组摘走后普通组剩 1 个")
+eq(plain[1].hostname, "YlxcServer", "自己的服务器（有虚拟 IP、名不含前缀）算普通节点")
+eq(#shared, 2, "两个 PublicServer_* 归入服务器组（按 server_prefix 前缀）")
+
+-- 前缀表可配置，且认中英文逗号
+eq(#e.prefixes({ serverPrefix = "PublicServer, EasyTier公共，node" }), 3, "prefixes 拆三项")
+eq(e.isServer("publicserver_debian", { "publicserver" }), true, "isServer 忽略大小写")
+eq(e.isServer("ylxc-r9000p", { "publicserver" }), false, "isServer 普通名字不算")
 eq(#e.splitRows({}), 0, "splitRows 空表不报错")
 eq(#e.splitRows(nil), 0, "splitRows nil 不报错")
 -- 8. 本机信息

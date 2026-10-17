@@ -3,7 +3,7 @@
 -- tests/panel_assert.luau —— panel.luau 的离线渲染断言
 --
 -- 跑完 onOpen() 之后检查渲染树：结构是否完整、数据是否显示出来、
--- 中继节点是否与普通节点分段且默认折叠、点了能不能展开，
+-- 服务器节点（公共共享节点）是否与普通节点分段且默认折叠、点了能不能展开，
 -- 以及本仓库踩过的坑（按钮必须放在容器末尾，否则会破坏同级渲染）。
 -- ══════════════════════════════════════════════════════════════════════════
 
@@ -43,8 +43,8 @@ local function collect()
     return result
 end
 
--- 找到「中继」分区那行（整行可点，用来展开／折叠）
-local function findRelayHead()
+-- 找到「服务器」分区那行（整行可点，用来展开／折叠）
+local function findServerHead()
     local found = nil
     walk(rendered, function(node)
         if node.kind ~= "row" or not (node.props and node.props.onClick) then
@@ -52,7 +52,7 @@ local function findRelayHead()
         end
         for _, child in ipairs(node.children or {}) do
             local text = child.props and child.props.text
-            if text == "中继" then
+            if text == "服务器" then
                 found = node
             end
         end
@@ -60,9 +60,9 @@ local function findRelayHead()
     return found
 end
 
--- 中继节点卡片是否存在：以 peerCard 的容器标识（fill = surface_variant/0.35）
+-- 服务器节点卡片是否存在：以 peerCard 的容器标识（fill = surface_variant/0.35）
 -- 包住 hostname 来判断，避免依赖收发字节的显示格式。
-local function hasRelayCard()
+local function hasServerCard()
     local found = false
     walk(rendered, function(node)
         if node.kind ~= "column" or (node.props and node.props.fill) ~= "surface_variant/0.35" then
@@ -70,7 +70,7 @@ local function hasRelayCard()
         end
         walk(node, function(inner)
             local text = inner.props and inner.props.text
-            if text == "ylxc-phone" then
+            if text == "PublicServer_debian" then
                 found = true
             end
         end)
@@ -103,26 +103,26 @@ eq(first.has("29.4ms"), true, "延迟已格式化渲染")
 eq(first.has("tcp://public.easytier.cn:11010"), true, "连接器地址已渲染")
 eq(first.has("ylxc"), true, "网络名已渲染")
 
--- 4. 中继节点与普通节点分段，且中继默认折叠
-eq(first.has("中继"), true, "中继分区标题已渲染")
-eq(first.has("ylxc-phone"), true, "路由表里的中继目标仍照常渲染（分段只管节点列表）")
-eq(hasRelayCard(), false, "中继节点卡片默认折叠（未渲染）")
+-- 4. 服务器节点与普通节点分段，且服务器默认折叠（relay 模式的节点不算服务器）
+eq(first.has("服务器"), true, "服务器分区标题已渲染")
+eq(first.has("ylxc-phone"), true, "relay 模式节点留在普通组里照常渲染")
+eq(hasServerCard(), false, "服务器节点卡片默认折叠（未渲染）")
 eq(first.has("展开"), true, "折叠时显示「展开」")
 
--- 5. 点一下中继标题行 → 展开；再点一下 → 收回
-local relayRow = findRelayHead()
-eq(relayRow ~= nil, true, "中继分区标题行可点")
+-- 5. 点一下服务器标题行 → 展开；再点一下 → 收回
+local serverRow = findServerHead()
+eq(serverRow ~= nil, true, "服务器分区标题行可点")
 
-relayRow.props.onClick()
+serverRow.props.onClick()
 local opened = collect()
-eq(hasRelayCard(), true, "点击后中继节点卡片渲染出来")
+eq(hasServerCard(), true, "点击后服务器节点卡片渲染出来")
 eq(opened.has("收起"), true, "展开后显示「收起」")
 
-relayRow = findRelayHead()
-eq(relayRow ~= nil, true, "展开后中继标题行仍在")
-relayRow.props.onClick()
+serverRow = findServerHead()
+eq(serverRow ~= nil, true, "展开后服务器标题行仍在")
+serverRow.props.onClick()
 local folded = collect()
-eq(hasRelayCard(), false, "再点一次重新折叠")
+eq(hasServerCard(), false, "再点一次重新折叠")
 eq(folded.has("展开"), true, "收回去后又显示「展开」")
 
 -- 6. 渲染树规模合理（防止「只剩本机卡片」这种半截渲染再次发生）

@@ -32,6 +32,7 @@ local cli = {
         { hostname = "ylxc-t480s", ipv4 = "172.24.1.1", cost = "Local", lat_ms = "0.00", loss_rate = "1.0%", rx_bytes = "1.00 kB", tx_bytes = "2.00 kB", tunnel_proto = "tcp", nat_type = "Symmetric", version = "2.6.4", id = 1062248666 },
         { hostname = "ylxc-r9000p", ipv4 = "172.24.1.2", cost = "p2p", lat_ms = "29.40", loss_rate = "1.0%", rx_bytes = "100.47 kB", tx_bytes = "117.73 kB", tunnel_proto = "tcp", nat_type = "PortRestricted", version = "2.6.4", id = 11 },
         { hostname = "ylxc-phone", ipv4 = "172.24.1.3", cost = "relay", lat_ms = "-", loss_rate = "0.0%", rx_bytes = "5.87 MB", tx_bytes = "1.03 MB", tunnel_proto = "udp", nat_type = "Symmetric", version = "2.6.4", id = 12 },
+        { hostname = "PublicServer_debian", ipv4 = "", cost = "p2p", lat_ms = "30.60", loss_rate = "0.0%", rx_bytes = "67.00 kB", tx_bytes = "83.00 kB", tunnel_proto = "tcp", nat_type = "Symmetric", version = "2.4.5-4c4d172e", id = 13 },
     },
     route = {
         { hostname = "ylxc-r9000p", ipv4 = "172.24.1.2", proxy_cidrs = {}, next_hop_ipv4 = "172.24.1.2", next_hop_hostname = "ylxc-r9000p", next_hop_lat = "0", path_len = 1, path_latency = "29.40" },

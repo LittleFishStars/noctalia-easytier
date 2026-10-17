@@ -53,7 +53,8 @@
   "panel_public": "公网",
   "panel_refresh": "重新读取",
   "panel_relay": "中继",
-  "panel_relay_toggle": "点击展开或收起中继节点",
+  "panel_servers": "服务器",
+  "panel_servers_toggle": "点击展开或收起服务器节点",
   "panel_retry": "重试",
   "panel_route_failed": "路由表读取失败：%s",
   "panel_routes": "路由",
@@ -113,6 +114,10 @@
     "max_peers": {
       "description": "面板里最多直接列出多少个节点，多余的收进「展开」。",
       "label": "面板节点上限"
+    },
+    "server_prefix": {
+      "description": "主机名里包含这些前缀的节点算作「服务器节点」（公共共享节点），单独成段且默认折叠；多个前缀用逗号分隔。",
+      "label": "服务器节点前缀"
     },
     "notify_state_change": {
       "description": "组网从可用变成连不上（或恢复）时弹一条通知。",

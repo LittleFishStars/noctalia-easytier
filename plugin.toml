@@ -123,6 +123,13 @@ label_key = "settings.max_peers.label"
 description_key = "settings.max_peers.description"
 
 [[setting]]
+key = "server_prefix"
+type = "string"
+default = "PublicServer"
+label_key = "settings.server_prefix.label"
+description_key = "settings.server_prefix.description"
+
+[[setting]]
 key = "notify_state_change"
 type = "bool"
 default = false

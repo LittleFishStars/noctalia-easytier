@@ -24,6 +24,7 @@ local cfgTable = {
     loss_crit_percent = 10,
     fetch_extras = true,
     max_peers = 64,
+    server_prefix = "PublicServer",
     notify_state_change = false,
     display = "status",
     glyph = "network",
